@@ -5,15 +5,15 @@ import pygame
 
 pygame.init()
 
-s_width = 300
-s_height = 300
+s_width = 1000
+s_height = 600
 
 screen = pygame.display.set_mode((s_width, s_height))
 pygame.display.set_caption('Gravity Simulator')
 
 weights = {
     "real_hydrogen": (0.00000000000000000000000166058, 1),
-    "hydrogen": (0.000000000000000166058, 3)
+    "hydrogen": (0.00000000000000166058, 3)
 }
 
 g_constant = 6.67408e-11
@@ -40,8 +40,10 @@ class Particle:
         self.id = 'p' + str(id)
         self.force = force
         self.collided = False
-        self.x_force = []
-        self.y_force = []
+        self.x_forces = []
+        self.y_forces = []
+        self.x_force = 0
+        self.y_force = 0
 
     def update(self):
         # Calculate forces on every other particle
@@ -58,6 +60,8 @@ class Particle:
                     self.collided = True
                     particle2.mass += self.mass
                     particle2.rarea += self.rarea
+                    particle2.x_force += self.x_force
+                    particle2.y_force += self.y_force
                     # print(particle2.id + str(math.pi * particle2.radius ** 2))
                     if self in alive:
                         alive.remove(self)
@@ -84,29 +88,29 @@ class Particle:
 
                 # Get force vector
                 mul = d_travelled / dist
-                temp_force = []
+                gravity_force = []
                 if self.rcoords[0] < particle2.rcoords[0]:
-                    temp_force.append(abs(x_diff * mul))
+                    gravity_force.append(abs(x_diff * mul))
                 else:
-                    temp_force.append(-abs(x_diff * mul))
+                    gravity_force.append(-abs(x_diff * mul))
 
                 if self.rcoords[1] < particle2.rcoords[1]:
-                    temp_force.append(abs(y_diff * mul))
+                    gravity_force.append(abs(y_diff * mul))
                 else:
-                    temp_force.append(-abs(y_diff * mul))
+                    gravity_force.append(-abs(y_diff * mul))
 
                 if not self.collided:
-                    forces.append(temp_force)
-                    print(temp_force)
+                    forces.append(gravity_force)
 
-        forces.append(self.force)
         # Get average of each force on every axis
         for force in forces:
-            self.x_force.append(force[0])
-            self.y_force.append(force[1])
+            self.x_forces.append(force[0])
+            self.y_forces.append(force[1])
 
-        self.x_force = sum(self.x_force)
-        self.y_force = sum(self.y_force)
+        self.x_force = sum(self.x_forces) + self.force[0]
+        self.y_force = sum(self.y_forces) + self.force[1]
+
+        print(self.x_force)
 
         # Get sum of all forces
         distances_to_move = [self.x_force, self.y_force]
@@ -129,12 +133,9 @@ particles = []
 for i in range(2):
     particles.append(Particle((rand.randrange(0, s_width, 1), rand.randrange(0, s_height, 1), 0), (0, 0), weights["hydrogen"], i))
 
-particles.append(Particle((rand.randrange(0, s_width, 1), rand.randrange(0, s_height, 1), 0), (5.1e-10, 0), weights["hydrogen"], i))
+particles.append(Particle((50, 50), (5.1e-10, 0), weights["hydrogen"], 10))
 
 # Main Loop
-
-fps = 30
-time_delta = 1 / fps
 
 run = 1
 while run:
@@ -144,7 +145,6 @@ while run:
 
     # Get time for distance calculations
     t0 = time.perf_counter()
-    time.sleep(time_delta)
 
     screen.fill((0, 0, 0))
 
